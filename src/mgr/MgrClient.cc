@@ -304,9 +304,15 @@ void MgrClient::_send_report()
   {
     // Helper for checking whether a counter should be included
     auto include_counter = [this](
+        const std::string &path,
         const PerfCounters::perf_counter_data_any_d &ctr,
         const PerfCounters &perf_counters)
     {
+      // path format: name[-addr ...].dataname
+      auto delimiter_pos = path.find(".");
+      ceph_assert(delimiter_pos != std::string::npos);
+      const std::string &counter_name(path.substr(0, delimiter_pos));
+      const std::string &data_name(path.substr(delimiter_pos + 1));
       return perf_counters.get_adjusted_priority(ctr.prio) >= (int)stats_threshold;
     };
 
@@ -335,7 +341,7 @@ void MgrClient::_send_report()
 
       // Find counters that still exist, but are no longer permitted by
       // stats_threshold
-      if (!include_counter(data, perf_counters)) {
+      if (!include_counter(path, data, perf_counters)) {
         if (session->declared.count(path)) {
           undeclare(path);
         }
@@ -438,6 +444,15 @@ bool MgrClient::handle_mgr_configure(ref_t<MMgrConfigure> m)
 
   if (set_perf_queries_cb) {
     set_perf_queries_cb(m->osd_perf_metric_queries);
+  }
+
+  {
+    stats_also_include = m->stats_also_include;
+    ldout(cct, 4) << "stats_also_include=[";
+    std::ostringstream oss;
+    std::copy(stats_also_include.begin(), stats_also_include.end(),
+              std::ostream_iterator<std::string>(oss, ","));
+    ldout(cct, 4) << oss.str() << "]" << dendl;
   }
 
   bool starting = (stats_period == 0) && (m->stats_period != 0);

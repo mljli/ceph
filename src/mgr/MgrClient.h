@@ -69,6 +69,7 @@ protected:
 
   uint32_t stats_period = 0;
   uint32_t stats_threshold = 0;
+  std::set<std::string> stats_also_include;
   SafeTimer timer;
 
   CommandTable<MgrCommand> command_table;

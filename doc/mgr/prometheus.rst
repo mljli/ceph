@@ -30,6 +30,9 @@ IPv4 and IPv6 addresses on the host.  The port and listen address are both
 configurable with ``ceph config-key set``, with keys
 ``mgr/prometheus/server_addr`` and ``mgr/prometheus/server_port``.
 This port is registered with Prometheus's `registry <https://github.com/prometheus/prometheus/wiki/Default-port-allocations>`_.
+Currently, performance counters with low priorities are not exported. If
+you need some counters that are not listed in the default export set, specify
+them in the ``mgr/prometheus/also_include_counters``.
 
 RBD IO statistics
 -----------------

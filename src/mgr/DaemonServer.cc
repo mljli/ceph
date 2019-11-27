@@ -2807,8 +2807,9 @@ void DaemonServer::handle_conf_change(const ConfigProxy& conf,
 				      const std::set <std::string> &changed)
 {
 
-  if (changed.count("mgr_stats_threshold") || changed.count("mgr_stats_period")) {
-    dout(4) << "Updating stats threshold/period on "
+  if (changed.count("mgr_stats_threshold") || changed.count("mgr_stats_period") ||
+      changed.count("mgr_stats_also_include")) {
+    dout(4) << "Updating stats threshold/period/also_include on "
             << daemon_connections.size() << " clients" << dendl;
     // Send a fresh MMgrConfigure to all clients, so that they can follow
     // the new policy for transmitting stats
@@ -2828,6 +2829,16 @@ void DaemonServer::_send_configure(ConnectionRef c)
   auto configure = make_message<MMgrConfigure>();
   configure->stats_period = g_conf().get_val<int64_t>("mgr_stats_period");
   configure->stats_threshold = g_conf().get_val<int64_t>("mgr_stats_threshold");
+  {
+    const std::string& cfg_str = g_conf().get_val<std::string>("mgr_stats_also_include");
+    std::string::size_type pos = 0;
+    do {
+      auto const& last_pos = pos;
+      // It's OK to skip the first character
+      pos = cfg_str.find(",", pos + 1);
+      configure->stats_also_include.insert(cfg_str.substr(last_pos, pos));
+    } while (pos != std::string::npos);
+  }
 
   if (c->peer_is_osd()) {
     configure->osd_perf_metric_queries =

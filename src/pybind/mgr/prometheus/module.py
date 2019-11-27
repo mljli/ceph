@@ -192,6 +192,12 @@ class Module(MgrModule):
         {'name': 'scrape_interval'},
         {'name': 'rbd_stats_pools'},
         {'name': 'rbd_stats_pools_refresh_interval'},
+        {
+            'name': 'also_include_counters',
+            'type': 'str',
+            'default': '',
+            'desc': 'counters to export regardless of their priorities'
+        },
     ]
 
     def __init__(self, *args, **kwargs):
@@ -923,7 +929,8 @@ class Module(MgrModule):
         self.get_pg_status()
         self.get_num_objects()
 
-        for daemon, counters in self.get_all_perf_counters().items():
+        for daemon, counters in self.get_all_perf_counters(
+                also_include=self.also_include_counters).items():
             for path, counter_info in counters.items():
                 # Skip histograms, they are represented by long running avgs
                 stattype = self._stattype_to_str(counter_info['type'])
@@ -1075,6 +1082,12 @@ class Module(MgrModule):
         # Make the cache timeout for collecting configurable
         self.collect_timeout = float(self.get_localized_module_option(
             'scrape_interval', 5.0))
+
+        # Export counters with a priority lower than PRIO_USEFUL
+        also_include_counters = self.get_localized_module_option(
+                'also_include_counters').split(',')
+        self.also_include_counters = set([counter_path.strip() for counter_path in
+                also_include_counters if counter_path.strip()])
 
         server_addr = self.get_localized_module_option(
             'server_addr', get_default_addr())

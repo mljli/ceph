@@ -1185,10 +1185,12 @@ class MgrModule(ceph_module.BaseMgrModule):
 
     def get_all_perf_counters(self, prio_limit=PRIO_USEFUL,
                               services=("mds", "mon", "osd",
-                                        "rbd-mirror", "rgw", "tcmu-runner")):
+                                        "rbd-mirror", "rgw", "tcmu-runner"),
+                              also_include={}):
         """
         Return the perf counters currently known to this ceph-mgr
-        instance, filtered by priority equal to or greater than `prio_limit`.
+        instance. Unless specified in `also_include`, counters
+        with a priority lower than `prio_limit` will be filtered out.
 
         The result is a map of string to dict, associating services
         (like "osd.123") with their counters.  The counter
@@ -1223,7 +1225,8 @@ class MgrModule(ceph_module.BaseMgrModule):
                     # self.log.debug("{0}: {1}".format(
                     #     counter_path, json.dumps(counter_schema)
                     # ))
-                    if counter_schema['priority'] < prio_limit:
+                    if counter_path not in also_include and \
+                            counter_schema['priority'] < prio_limit:
                         continue
 
                     counter_info = dict(counter_schema)
